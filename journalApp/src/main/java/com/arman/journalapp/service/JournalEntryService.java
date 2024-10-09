@@ -5,6 +5,7 @@ import com.arman.journalapp.entity.User;
 import com.arman.journalapp.repository.JournalEntryRepository;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +42,15 @@ public class JournalEntryService {
 
     public JournalEntry getJournalEntryById(ObjectId id) {
         return journalEntryRepository.findById(id).orElse(null);
+    }
+
+    public JournalEntry getJournalEntryByIdAndUserName(ObjectId id) {
+        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userService.findByUsername(userName);
+        if(user == null) {
+            return null;
+        }
+        return user.getJournalEntries().stream().filter(journalEntry -> journalEntry.getId().equals(id)).findFirst().orElse(null);
     }
 
     public void deleteJournalEntryById(ObjectId id, String userName) {

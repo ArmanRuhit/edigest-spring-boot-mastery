@@ -1,16 +1,16 @@
 package com.arman.journalapp.controller;
 
 import com.arman.journalapp.entity.User;
-import com.arman.journalapp.entity.User;
-import com.arman.journalapp.service.UserService;
 import com.arman.journalapp.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -18,7 +18,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
-
 
     @GetMapping
     public ResponseEntity<List<User>> getAll(){
@@ -30,16 +29,12 @@ public class UserController {
         }
     }
 
-    @PostMapping
-    public ResponseEntity<User> createJournal(@RequestBody User user){
-        userService.saveUser(user);
 
-        return new ResponseEntity<>(user, HttpStatus.CREATED);
-    }
 
-    @GetMapping("/id/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable ObjectId id){
-        User user = userService.getUserById(id);
+    @GetMapping("/user-name")
+    public ResponseEntity<User> getUserByUsername(){
+        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userService.getUserByUserName(userName);
         if(user == null){
             return ResponseEntity.notFound().build();
         } else {
@@ -47,20 +42,23 @@ public class UserController {
         }
     }
 
-//    @DeleteMapping("/id/{id}")
-//    public ResponseEntity<?> deleteUserById(@PathVariable ObjectId id){
-//        userService.deleteUserById(id);
-//        return ResponseEntity.notFound().build();
-//    }
+    @DeleteMapping
+    public ResponseEntity<?> deleteUserByUserName(){
+        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+        userService.deleteUserByUserName(userName);
+        return ResponseEntity.notFound().build();
+    }
 
-    @PutMapping("/id/{id}")
-    public ResponseEntity<User> updateUserById(@RequestBody User newUser){
+    @PutMapping
+    public ResponseEntity<User> updateUser(@RequestBody User newUser) {
 
-//        User old = userService.getUserById(id);
-        User oldUser = userService.findByUsername(newUser.getUsername());
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        String username = authentication.getName();
+        User oldUser = userService.findByUsername(username);
         if(oldUser != null){
             oldUser.setPassword(newUser.getPassword());
-            oldUser = userService.saveUser(oldUser);
+            oldUser = userService.saveNewUser(oldUser);
         }
 
         return oldUser == null ? ResponseEntity.noContent().build() : ResponseEntity.ok(oldUser);

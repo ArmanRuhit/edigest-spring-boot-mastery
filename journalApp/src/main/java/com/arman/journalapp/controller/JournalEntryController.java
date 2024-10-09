@@ -8,13 +8,11 @@ import lombok.RequiredArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/journal")
@@ -24,8 +22,9 @@ public class JournalEntryController {
     private final UserService userService;
 
 
-    @GetMapping("/{userName}")
-    public ResponseEntity<List<JournalEntry>> getAllJournalEntriesOfUser(@PathVariable String userName) {
+    @GetMapping()
+    public ResponseEntity<List<JournalEntry>> getAllJournalEntriesOfUser() {
+        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userService.findByUsername(userName);
         List<JournalEntry> journalEntries = user.getJournalEntries();
         if (journalEntries.isEmpty()) {
@@ -35,8 +34,10 @@ public class JournalEntryController {
         }
     }
 
-    @PostMapping("/{userName}")
-    public ResponseEntity<JournalEntry> createJournal(@RequestBody JournalEntry journalEntry, @PathVariable String userName) {
+    @PostMapping()
+    public ResponseEntity<JournalEntry> createJournal(@RequestBody JournalEntry journalEntry) {
+        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+
         JournalEntry savedJournalEntry =journalEntryService.saveJournalEntry(journalEntry, userName);
 
         return new ResponseEntity<>(savedJournalEntry, HttpStatus.CREATED);
@@ -44,7 +45,7 @@ public class JournalEntryController {
 
     @GetMapping("/id/{id}")
     public ResponseEntity<JournalEntry> getJournalEntryById(@PathVariable ObjectId id){
-        JournalEntry journalEntry = journalEntryService.getJournalEntryById(id);
+        JournalEntry journalEntry = journalEntryService.getJournalEntryByIdAndUserName(id);
         if(journalEntry == null){
             return ResponseEntity.notFound().build();
         } else {
@@ -52,15 +53,16 @@ public class JournalEntryController {
         }
     }
 
-    @DeleteMapping("/id/{userName}/{id}")
-    public ResponseEntity<?> deleteJournalEntryById(@PathVariable ObjectId id, @PathVariable String userName) {
+    @DeleteMapping("/id/{id}")
+    public ResponseEntity<?> deleteJournalEntryById(@PathVariable ObjectId id) {
+        String userName = SecurityContextHolder.getContext().getAuthentication().getName();
+
         journalEntryService.deleteJournalEntryById(id, userName);
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/id/{userName}/{id}")
-    public ResponseEntity<JournalEntry> updateJournalEntryById(@PathVariable ObjectId id,
-                                                   @RequestBody JournalEntry newJournalEntry, @PathVariable String userName) {
+    @PutMapping("/id/{id}")
+    public ResponseEntity<JournalEntry> updateJournalEntryById(@PathVariable ObjectId id, @RequestBody JournalEntry newJournalEntry) {
 
         JournalEntry old = journalEntryService.getJournalEntryById(id);
 
